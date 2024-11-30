@@ -1,6 +1,6 @@
 use crate::{is_fixed_complete, RespDecode, RespEncode, RespError};
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RespNull;
 
 // - null: "_\r\n"

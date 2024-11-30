@@ -4,7 +4,7 @@ use bytes::{Buf, BytesMut};
 use std::collections::BTreeMap;
 use std::ops::{Deref, DerefMut};
 
-#[derive(Default, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Default, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RespMap(BTreeMap<SimpleString, RespFrame>);
 
 const MAP_CAP: usize = 4096;

@@ -2,7 +2,7 @@ use crate::{extract_end_and_length, is_single_complete, RespDecode, RespEncode, 
 use bytes::{Buf, BytesMut};
 use std::ops::Deref;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BulkString(Vec<u8>);
 
 // - bulk string: "$<length>\r\n<data>\r\n"
@@ -35,6 +35,12 @@ impl Deref for BulkString {
     type Target = Vec<u8>;
 
     fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl AsRef<[u8]> for BulkString {
+    fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }

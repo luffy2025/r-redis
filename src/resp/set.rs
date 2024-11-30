@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use std::hash::Hash;
 use std::ops::Deref;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RespSet(BTreeSet<RespFrame>);
 
 const SET_CAP: usize = 4096;

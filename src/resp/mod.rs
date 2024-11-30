@@ -1,5 +1,5 @@
-use crate::resp::array::RespArray;
-use crate::resp::bulk_string::BulkString;
+pub use crate::resp::array::RespArray;
+pub use crate::resp::bulk_string::BulkString;
 use crate::resp::f64::RespF64;
 use crate::resp::map::RespMap;
 use crate::resp::null::RespNull;
@@ -31,7 +31,7 @@ pub trait RespDecode: Sized {
     fn decode(buf: &mut BytesMut) -> Result<Self, RespError>;
 }
 
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 #[enum_dispatch(RespEncode)]
 pub enum RespFrame {
     SimpleString(SimpleString),
@@ -77,7 +77,10 @@ impl RespDecode for RespFrame {
             Some(&RespNull::PREFIX) => Ok(RespNull::decode(buf)?.into()),
             Some(&bool::PREFIX) => Ok(bool::decode(buf)?.into()),
             Some(&RespF64::PREFIX) => Ok(RespF64::decode(buf)?.into()),
-            _ => Err(RespError::InvalidFrame("Invalid prefix".to_string())),
+            Some(e) => Err(RespError::InvalidFrame(
+                format!("Invalid prefix: {}", e.to_ascii_lowercase()).to_string(),
+            )),
+            _ => Err(RespError::NotCompete),
         }
     }
 }

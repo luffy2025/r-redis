@@ -4,8 +4,10 @@ use crate::{
 use bytes::Buf;
 use std::ops::{Deref, DerefMut};
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct RespArray(Vec<RespFrame>);
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RespArray {
+    pub(crate) data: Vec<RespFrame>,
+}
 
 const ARRAY_CAP: usize = 4096;
 
@@ -15,7 +17,7 @@ impl RespEncode for RespArray {
     fn encode(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(ARRAY_CAP);
         buf.extend_from_slice(format!("*{}\r\n", self.len()).as_bytes());
-        for frame in &self.0 {
+        for frame in &self.data {
             buf.extend_from_slice(&frame.encode());
         }
         buf
@@ -35,7 +37,7 @@ impl RespDecode for RespArray {
             frames.push(v);
         }
 
-        Ok(RespArray(frames))
+        Ok(RespArray::new(frames))
     }
 }
 
@@ -43,23 +45,27 @@ impl Deref for RespArray {
     type Target = Vec<RespFrame>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.data
     }
 }
 
 impl DerefMut for RespArray {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        &mut self.data
     }
 }
 
 impl RespArray {
     pub fn new(arr: Vec<RespFrame>) -> Self {
-        RespArray(arr)
+        RespArray { data: arr }
     }
 
     pub fn push(&mut self, frame: RespFrame) {
-        self.0.push(frame);
+        self.data.push(frame);
+    }
+
+    pub fn first(&self) -> Option<&RespFrame> {
+        self.data.first()
     }
 }
 
@@ -72,7 +78,7 @@ mod tests {
 
     #[test]
     fn test_resp_array() {
-        let arr: RespFrame = RespArray(vec![
+        let arr: RespFrame = RespArray::new(vec![
             BulkString::new("get".into()).into(),
             BulkString::new("hello".into()).into(),
             SimpleString::new("rust".to_string()).into(),

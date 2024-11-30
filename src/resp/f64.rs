@@ -1,6 +1,6 @@
 use crate::{is_fixed_complete, RespDecode, RespEncode, RespError};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RespF64(f64);
 
 impl Eq for RespF64 {}

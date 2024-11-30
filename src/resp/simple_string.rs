@@ -3,7 +3,7 @@ use bytes::BytesMut;
 use std::fmt::Display;
 use std::ops::Deref;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SimpleString(String);
 
 // - simple string: "+OK\r\n"
