@@ -1,4 +1,5 @@
-use crate::RespEncode;
+use crate::{extract_simple_frame_data, is_fixed_complete, RespDecode, RespEncode, RespError};
+use bytes::BytesMut;
 use std::fmt::Display;
 use std::ops::Deref;
 
@@ -9,6 +10,19 @@ pub struct SimpleError(String);
 impl RespEncode for SimpleError {
     fn encode(&self) -> Vec<u8> {
         format!("-{}\r\n", self).as_bytes().to_vec()
+    }
+}
+
+impl RespDecode for SimpleError {
+    const PREFIX: &'static u8 = &b'-';
+    fn decode(buf: &mut BytesMut) -> Result<Self, RespError> {
+        is_fixed_complete(buf)?;
+
+        let end = extract_simple_frame_data(buf, &[*Self::PREFIX])?;
+        let s = buf.split_to(end + 2);
+        let s = String::from_utf8_lossy(&s[1..end]);
+
+        Ok(SimpleError(s.into()))
     }
 }
 
@@ -41,5 +55,12 @@ mod tests {
     fn test_simple_error() {
         let s: RespFrame = SimpleError::new("Error message").into();
         assert_eq!(s.encode(), b"-Error message\r\n");
+    }
+
+    #[test]
+    fn test_simple_error_decode() {
+        let mut buf = BytesMut::from(&b"-Error message\r\n"[..]);
+        let s = SimpleError::decode(&mut buf).unwrap();
+        assert_eq!(s, SimpleError::new("Error message"));
     }
 }

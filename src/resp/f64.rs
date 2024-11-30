@@ -1,4 +1,4 @@
-use crate::RespEncode;
+use crate::{is_fixed_complete, RespDecode, RespEncode, RespError};
 
 #[derive(Debug, PartialEq)]
 pub struct RespF64(f64);
@@ -32,6 +32,19 @@ impl RespEncode for RespF64 {
     }
 }
 
+impl RespDecode for RespF64 {
+    const PREFIX: &'static u8 = &b',';
+    fn decode(buf: &mut bytes::BytesMut) -> Result<Self, RespError> {
+        is_fixed_complete(buf)?;
+
+        let end = crate::extract_simple_frame_data(buf, &[*Self::PREFIX])?;
+        let s = buf.split_to(end + 2);
+        let s = String::from_utf8_lossy(&s[1..end]);
+
+        Ok(RespF64(s.parse()?))
+    }
+}
+
 impl RespF64 {
     pub fn new(f: f64) -> Self {
         RespF64(f)
@@ -41,14 +54,49 @@ impl RespF64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
 
     #[test]
     fn test_f64_encode() {
-        assert_eq!(RespF64(0.0).encode(), b",+0e0\r\n");
-        assert_eq!(RespF64(1.0).encode(), b",+1\r\n");
-        assert_eq!(RespF64(-1.0).encode(), b",-1\r\n");
+        assert_eq!(RespF64(0f64).encode(), b",+0e0\r\n");
+        assert_eq!(RespF64(10f64).encode(), b",+10\r\n");
+        assert_eq!(RespF64(-10f64).encode(), b",-10\r\n");
         assert_eq!(RespF64(1.23456e+8).encode(), b",+1.23456e8\r\n");
         assert_eq!(RespF64(-1.23456e+8).encode(), b",-1.23456e8\r\n");
+        assert_eq!(RespF64(1.23456e-9).encode(), b",+1.23456e-9\r\n");
         assert_eq!(RespF64(-1.23456e-9).encode(), b",-1.23456e-9\r\n");
+    }
+
+    #[test]
+    fn test_f64_decode() -> Result<()> {
+        let mut buf = bytes::BytesMut::from(&b",+0e0\r\n"[..]);
+        let ret = RespF64::decode(&mut buf)?;
+        assert_eq!(ret, RespF64(0f64));
+
+        let mut buf = bytes::BytesMut::from(&b",+10\r\n"[..]);
+        let ret = RespF64::decode(&mut buf)?;
+        assert_eq!(ret, RespF64(10f64));
+
+        let mut buf = bytes::BytesMut::from(&b",-10\r\n"[..]);
+        let ret = RespF64::decode(&mut buf)?;
+        assert_eq!(ret, RespF64(-10f64));
+
+        let mut buf = bytes::BytesMut::from(&b",+1.23456e8\r\n"[..]);
+        let ret = RespF64::decode(&mut buf)?;
+        assert_eq!(ret, RespF64(1.23456e+8));
+
+        let mut buf = bytes::BytesMut::from(&b",-1.23456e8\r\n"[..]);
+        let ret = RespF64::decode(&mut buf)?;
+        assert_eq!(ret, RespF64(-1.23456e+8));
+
+        let mut buf = bytes::BytesMut::from(&b",+1.23456e-9\r\n"[..]);
+        let ret = RespF64::decode(&mut buf)?;
+        assert_eq!(ret, RespF64(1.23456e-9));
+
+        let mut buf = bytes::BytesMut::from(&b",-1.23456e-9\r\n"[..]);
+        let ret = RespF64::decode(&mut buf)?;
+        assert_eq!(ret, RespF64(-1.23456e-9));
+
+        Ok(())
     }
 }

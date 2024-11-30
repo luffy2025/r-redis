@@ -1,4 +1,5 @@
-use crate::RespEncode;
+use crate::{extract_simple_frame_data, is_fixed_complete, RespDecode, RespEncode, RespError};
+use bytes::BytesMut;
 use std::fmt::Display;
 use std::ops::Deref;
 
@@ -9,6 +10,20 @@ pub struct SimpleString(String);
 impl RespEncode for SimpleString {
     fn encode(&self) -> Vec<u8> {
         format!("+{}\r\n", self).as_bytes().to_vec()
+    }
+}
+
+impl RespDecode for SimpleString {
+    const PREFIX: &'static u8 = &b'+';
+    fn decode(buf: &mut BytesMut) -> Result<Self, RespError> {
+        is_fixed_complete(buf)?;
+
+        let end = extract_simple_frame_data(buf, &[*Self::PREFIX])?;
+
+        let s = buf.split_to(end + 2);
+        let s = String::from_utf8_lossy(&s[1..end]);
+
+        Ok(SimpleString(s.into()))
     }
 }
 
@@ -35,10 +50,29 @@ impl SimpleString {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
+    use bytes::BufMut;
 
     #[test]
     fn test_simple_string() {
         let s = SimpleString::new("OK");
         assert_eq!(s.encode(), b"+OK\r\n");
+    }
+
+    #[test]
+    fn test_simple_string_decode() -> Result<()> {
+        let mut buf = BytesMut::from(&b"+OK\r\n"[..]);
+        let ret = SimpleString::decode(&mut buf)?;
+        assert_eq!(ret, SimpleString::new("OK".to_string()));
+
+        buf.extend_from_slice(b"+Hello\r".as_ref());
+        let ret = SimpleString::decode(&mut buf);
+        assert_eq!(ret.unwrap_err(), RespError::NotCompete);
+
+        buf.put_u8(b'\n');
+        let ret = SimpleString::decode(&mut buf)?;
+        assert_eq!(ret, SimpleString::new("Hello".to_string()));
+
+        Ok(())
     }
 }
