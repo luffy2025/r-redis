@@ -120,7 +120,7 @@ mod tests {
     fn test_resp_array_decode_not_complete() -> Result<()> {
         let mut buf = bytes::BytesMut::from(&b"*3\r\n$3\r\nget\r\n$5\r\nhello\r\n+China\r"[..]);
         let ret = RespArray::decode(&mut buf);
-        assert_eq!(ret.unwrap_err(), RespError::NotCompete);
+        assert_eq!(ret.unwrap_err(), RespError::NotComplete);
 
         buf.extend_from_slice(b"\n");
         let ret = RespArray::decode(&mut buf)?;

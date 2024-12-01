@@ -55,7 +55,9 @@ pub enum RespError {
     #[error("Invalid frame length: {0}")]
     InvalidFrameLength(isize),
     #[error("Frame is not compete")]
-    NotCompete,
+    NotComplete,
+    #[error("Frame is empty")]
+    Empty,
     #[error("ParseIntError: {0}")]
     ParseIntError(#[from] std::num::ParseIntError),
     #[error("ParseFloatError: {0}")]
@@ -80,7 +82,7 @@ impl RespDecode for RespFrame {
             Some(e) => Err(RespError::InvalidFrame(
                 format!("Invalid prefix: {}", e.to_ascii_lowercase()).to_string(),
             )),
-            _ => Err(RespError::NotCompete),
+            None => Err(RespError::Empty),
         }
     }
 }
@@ -97,7 +99,7 @@ pub fn extract_end_and_length(
 
 pub fn extract_simple_frame_data(buf: &mut BytesMut, prefix: &[u8]) -> Result<usize, RespError> {
     if buf.len() < 3 {
-        return Err(RespError::NotCompete);
+        return Err(RespError::NotComplete);
     }
     if !buf.starts_with(prefix) {
         return Err(RespError::InvalidFrameType("SimpleError".into()));
@@ -111,7 +113,7 @@ pub fn extract_simple_frame_data(buf: &mut BytesMut, prefix: &[u8]) -> Result<us
         }
     }
     if end == 0 {
-        return Err(RespError::NotCompete);
+        return Err(RespError::NotComplete);
     }
     Ok(end)
 }
@@ -128,20 +130,22 @@ pub fn is_combine_complete(buf: &[u8], len: usize) -> Result<(), RespError> {
         i += 1;
     }
     // The content in the item may contain \r\n, so here it is >=
-    (count >= len).then_some(()).ok_or(RespError::NotCompete)
+    (count >= len).then_some(()).ok_or(RespError::NotComplete)
 }
 
 pub fn is_single_complete(buf: &[u8], len: usize) -> Result<(), RespError> {
     is_fixed_complete(buf)?;
     (buf.len() >= len + 4 + 2)
         .then_some(())
-        .ok_or(RespError::NotCompete)
+        .ok_or(RespError::NotComplete)
 }
 
 pub fn is_fixed_complete(buf: &[u8]) -> Result<(), RespError> {
-    (buf.len() > 2).then_some(()).ok_or(RespError::NotCompete)?;
+    (buf.len() > 2)
+        .then_some(())
+        .ok_or(RespError::NotComplete)?;
 
     buf.ends_with(b"\r\n")
         .then_some(())
-        .ok_or(RespError::NotCompete)
+        .ok_or(RespError::NotComplete)
 }

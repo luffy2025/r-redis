@@ -1,13 +1,13 @@
 use crate::backend::Backend;
-use crate::cmd::{extract_args, validate_command, CommandError, Executor, RESP_EMPTY};
+use crate::cmd::{extract_args, validate_command, CommandError, CommandExecutor, RESP_EMPTY};
 use crate::{RespArray, RespFrame};
 
-#[allow(dead_code)]
+#[derive(Debug)]
 pub struct Get {
     key: String,
 }
 
-impl Executor for Get {
+impl CommandExecutor for Get {
     fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError> {
         match backend.get(&self.key) {
             Some(value) => Ok(value),

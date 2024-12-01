@@ -1,14 +1,14 @@
 use crate::backend::Backend;
-use crate::cmd::{extract_args, validate_command, CommandError, Executor, RESP_EMPTY};
+use crate::cmd::{extract_args, validate_command, CommandError, CommandExecutor, RESP_EMPTY};
 use crate::{RespArray, RespFrame};
 
-#[allow(dead_code)]
+#[derive(Debug)]
 pub struct HGet {
     key: String,
     field: String,
 }
 
-impl Executor for HGet {
+impl CommandExecutor for HGet {
     fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError> {
         match backend.hget(&self.key, &self.field) {
             Some(value) => Ok(value),

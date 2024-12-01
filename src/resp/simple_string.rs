@@ -79,7 +79,7 @@ mod tests {
 
         buf.extend_from_slice(b"+Hello\r".as_ref());
         let ret = SimpleString::decode(&mut buf);
-        assert_eq!(ret.unwrap_err(), RespError::NotCompete);
+        assert_eq!(ret.unwrap_err(), RespError::NotComplete);
 
         buf.put_u8(b'\n');
         let ret = SimpleString::decode(&mut buf)?;

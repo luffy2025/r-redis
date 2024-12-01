@@ -1,14 +1,14 @@
 use crate::backend::Backend;
-use crate::cmd::{extract_args, validate_command, CommandError, Executor, RESP_OK};
+use crate::cmd::{extract_args, validate_command, CommandError, CommandExecutor, RESP_OK};
 use crate::{RespArray, RespFrame};
 
-#[allow(dead_code)]
+#[derive(Debug)]
 pub struct Set {
     key: String,
     value: RespFrame,
 }
 
-impl Executor for Set {
+impl CommandExecutor for Set {
     fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError> {
         backend.set(self.key, self.value);
         Ok(RESP_OK.clone())
@@ -27,8 +27,6 @@ impl TryFrom<RespArray> for Set {
         match (args.next(), args.next()) {
             (Some(RespFrame::BulkString(key)), Some(value)) => {
                 let key = String::from_utf8(key.to_vec())?;
-                println!("{:?}", key);
-                println!("{:?}", value);
                 Ok(Set { key, value })
             }
             _ => Err(CommandError::InvalidArgs("Invalid arguments".to_string())),

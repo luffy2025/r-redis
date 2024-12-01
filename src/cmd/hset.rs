@@ -1,15 +1,15 @@
 use crate::backend::Backend;
-use crate::cmd::{extract_args, validate_command, CommandError, Executor, RESP_OK};
+use crate::cmd::{extract_args, validate_command, CommandError, CommandExecutor, RESP_OK};
 use crate::{RespArray, RespFrame};
 
-#[allow(dead_code)]
+#[derive(Debug)]
 pub struct HSet {
     key: String,
     field: String,
     value: RespFrame,
 }
 
-impl Executor for HSet {
+impl CommandExecutor for HSet {
     fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError> {
         backend.hset(self.key, self.field, self.value);
         Ok(RESP_OK.clone())

@@ -3,8 +3,10 @@ use dashmap::DashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
+#[derive(Debug, Clone)]
 pub struct Backend(Arc<BackendInner>);
 
+#[derive(Debug, Clone)]
 pub struct BackendInner {
     map: DashMap<String, RespFrame>,
     hmap: DashMap<String, DashMap<String, RespFrame>>,

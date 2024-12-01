@@ -4,6 +4,7 @@ use crate::cmd::hget::HGet;
 use crate::cmd::hset::HSet;
 use crate::cmd::set::Set;
 use crate::{RespArray, RespFrame, RespNull};
+use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use thiserror::Error;
 
@@ -18,12 +19,18 @@ lazy_static! {
     static ref BACKEND: Backend = Backend::new();
 }
 
+#[derive(Debug)]
+pub struct Unrecognized;
+
+#[derive(Debug)]
+#[enum_dispatch(CommandExecutor)]
 pub enum Command {
     Get(Get),
     Set(Set),
     HGet(HGet),
     HSet(HSet),
     // HSetAll(hset_all::HSetAll),
+    Unrecognized(Unrecognized),
 }
 
 #[derive(Error, Debug, PartialEq, Eq)]
@@ -38,8 +45,15 @@ pub enum CommandError {
     FromUtf8Error(#[from] std::string::FromUtf8Error),
 }
 
-pub trait Executor {
+#[enum_dispatch]
+pub trait CommandExecutor {
     fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError>;
+}
+
+impl CommandExecutor for Unrecognized {
+    fn execute(self, _: &Backend) -> Result<RespFrame, CommandError> {
+        Ok(RESP_OK.clone())
+    }
 }
 
 impl TryFrom<RespFrame> for Command {
@@ -58,7 +72,7 @@ impl TryFrom<RespFrame> for Command {
                 b"hget" => Ok(Command::HGet(HGet::try_from(frame)?)),
                 b"hset" => Ok(Command::HSet(HSet::try_from(frame)?)),
                 // b"hset_all" => Ok(Command::HSetAll(hset_all::HSetAll::new(cmd))),
-                _ => Err(CommandError::InvalidCmd("Invalid command".to_string())),
+                _ => Ok(Command::Unrecognized(Unrecognized)),
             },
             _ => Err(CommandError::InvalidArgs("Invalid arguments".to_string())),
         }
