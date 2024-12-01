@@ -54,6 +54,12 @@ impl DerefMut for RespMap {
     }
 }
 
+impl From<BTreeMap<SimpleString, RespFrame>> for RespMap {
+    fn from(map: BTreeMap<SimpleString, RespFrame>) -> Self {
+        RespMap(map)
+    }
+}
+
 impl RespMap {
     pub fn new() -> Self {
         RespMap(BTreeMap::new())
@@ -69,14 +75,8 @@ mod tests {
     #[test]
     fn test_resp_map() {
         let mut map = RespMap::new();
-        map.insert(
-            SimpleString::new("get"),
-            RespFrame::BulkString(BulkString::new("hello".into())),
-        );
-        map.insert(
-            SimpleString::new("set"),
-            RespFrame::BulkString(BulkString::new("world".into())),
-        );
+        map.insert(SimpleString::new("get"), BulkString::new("hello").into());
+        map.insert(SimpleString::new("set"), BulkString::new("world").into());
         map.insert(SimpleString::new("add"), 10.into());
 
         assert_eq!(
@@ -92,14 +92,8 @@ mod tests {
         );
         let map = RespMap::decode(&mut buf)?;
         let mut expected = RespMap::new();
-        expected.insert(
-            SimpleString::new("get"),
-            RespFrame::BulkString(BulkString::new("hello".into())),
-        );
-        expected.insert(
-            SimpleString::new("set"),
-            RespFrame::BulkString(BulkString::new("world".into())),
-        );
+        expected.insert(SimpleString::new("get"), BulkString::new("hello").into());
+        expected.insert(SimpleString::new("set"), BulkString::new("world").into());
         expected.insert(SimpleString::new("add"), 10.into());
         assert_eq!(map, expected);
 

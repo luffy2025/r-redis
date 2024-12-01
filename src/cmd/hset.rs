@@ -1,4 +1,5 @@
-use crate::cmd::{extract_args, validate_command, CommandError, Executor};
+use crate::backend::Backend;
+use crate::cmd::{extract_args, validate_command, CommandError, Executor, RESP_OK};
 use crate::{RespArray, RespFrame};
 
 #[allow(dead_code)]
@@ -9,8 +10,9 @@ pub struct HSet {
 }
 
 impl Executor for HSet {
-    fn execute(&self) -> Result<RespFrame, CommandError> {
-        todo!()
+    fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError> {
+        backend.hset(self.key, self.field, self.value);
+        Ok(RESP_OK.clone())
     }
 }
 
@@ -40,19 +42,21 @@ impl TryFrom<RespArray> for HSet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::cmd::hget::HGet;
+    use crate::cmd::RESP_EMPTY;
     use crate::{BulkString, RespDecode};
     use anyhow::Result;
 
     #[test]
     fn test_hset_command() -> Result<()> {
         let mut cmd = bytes::BytesMut::from(
-            &b"*4\r\n$4\r\nhset\r\n$3\r\nmap\r\n$5\r\nhello\r\n$5\r\nworld\r\n"[..],
+            &b"*4\r\n$4\r\nhset\r\n$3\r\nkey\r\n$5\r\nhello\r\n$5\r\nworld\r\n"[..],
         );
         let cmd = RespArray::decode(&mut cmd)?;
         let set = HSet::try_from(cmd)?;
-        assert_eq!(set.key, "map");
+        assert_eq!(set.key, "key");
         assert_eq!(set.field, "hello");
-        assert_eq!(set.value, BulkString::new(b"world".into()).into());
+        assert_eq!(set.value, BulkString::new(b"world").into());
         Ok(())
     }
 
@@ -63,6 +67,36 @@ mod tests {
         let cmd = RespArray::decode(&mut cmd)?;
         let set = HSet::try_from(cmd);
         assert!(set.is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_execute_hset_and_hget() -> Result<()> {
+        let backend = Backend::new();
+
+        let mut cmd = bytes::BytesMut::from(
+            &b"*4\r\n$4\r\nhset\r\n$3\r\nkey\r\n$5\r\nhello\r\n$5\r\nworld\r\n"[..],
+        );
+        let cmd = RespArray::decode(&mut cmd)?;
+        let set = HSet::try_from(cmd)?;
+        let ret = set.execute(&backend)?;
+        assert_eq!(ret, RESP_OK.clone());
+
+        let mut cmd =
+            bytes::BytesMut::from(&b"*3\r\n$4\r\nhget\r\n$3\r\nkey\r\n$5\r\nhello\r\n"[..]);
+        let cmd = RespArray::decode(&mut cmd)?;
+        let get = HGet::try_from(cmd)?;
+        let ret = get.execute(&backend)?;
+        assert_eq!(ret, BulkString::new(b"world").into());
+
+        let mut cmd = bytes::BytesMut::from(
+            &b"*3\r\n$4\r\nhget\r\n$3\r\nkey\r\n$5\r\nnot_exist_field\r\n"[..],
+        );
+        let cmd = RespArray::decode(&mut cmd)?;
+        let get = HGet::try_from(cmd)?;
+        let ret = get.execute(&backend)?;
+        assert_eq!(ret, RESP_EMPTY.clone());
+
         Ok(())
     }
 }

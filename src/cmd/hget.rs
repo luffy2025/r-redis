@@ -1,4 +1,5 @@
-use crate::cmd::{extract_args, validate_command, CommandError, Executor};
+use crate::backend::Backend;
+use crate::cmd::{extract_args, validate_command, CommandError, Executor, RESP_EMPTY};
 use crate::{RespArray, RespFrame};
 
 #[allow(dead_code)]
@@ -8,8 +9,11 @@ pub struct HGet {
 }
 
 impl Executor for HGet {
-    fn execute(&self) -> Result<RespFrame, CommandError> {
-        todo!()
+    fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError> {
+        match backend.hget(&self.key, &self.field) {
+            Some(value) => Ok(value),
+            None => Ok(RESP_EMPTY.clone()),
+        }
     }
 }
 

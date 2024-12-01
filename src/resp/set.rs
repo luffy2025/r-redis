@@ -4,7 +4,7 @@ use crate::{
 use bytes::{Buf, BytesMut};
 use std::collections::BTreeSet;
 use std::hash::Hash;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RespSet(BTreeSet<RespFrame>);
@@ -69,6 +69,30 @@ impl Deref for RespSet {
     }
 }
 
+impl DerefMut for RespSet {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl From<BTreeSet<RespFrame>> for RespSet {
+    fn from(set: BTreeSet<RespFrame>) -> Self {
+        RespSet(set)
+    }
+}
+
+impl Default for RespSet {
+    fn default() -> Self {
+        RespSet::new()
+    }
+}
+
+impl RespSet {
+    pub fn new() -> Self {
+        RespSet(BTreeSet::new())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -78,15 +102,11 @@ mod tests {
 
     #[test]
     fn test_resp_set() {
-        let mut set = BTreeSet::new();
-        set.insert(BulkString::new(b"hello".to_vec()).into());
-        set.insert(BulkString::new(b"world".to_vec()).into());
+        let mut set = RespSet::new();
+        set.insert(BulkString::new(b"hello").into());
+        set.insert(BulkString::new(b"world").into());
         set.insert(10.into());
-        set.insert(
-            RespArray::new(vec![(-123).into(), BulkString::new("arr".into()).into()]).into(),
-        );
-
-        let set = RespSet(set);
+        set.insert(RespArray::new(vec![(-123).into(), BulkString::new("arr").into()]).into());
         assert_eq!(
             set.encode(),
             b"~4\r\n:+10\r\n$5\r\nhello\r\n$5\r\nworld\r\n*2\r\n:-123\r\n$3\r\narr\r\n"
@@ -100,12 +120,10 @@ mod tests {
         );
         let set = RespSet::decode(&mut buf)?;
         let mut expected = BTreeSet::new();
-        expected.insert(BulkString::new(b"hello".to_vec()).into());
-        expected.insert(BulkString::new(b"world".to_vec()).into());
+        expected.insert(BulkString::new(b"hello").into());
+        expected.insert(BulkString::new(b"world").into());
         expected.insert(10.into());
-        expected.insert(
-            RespArray::new(vec![(-123).into(), BulkString::new("arr".into()).into()]).into(),
-        );
+        expected.insert(RespArray::new(vec![(-123).into(), BulkString::new("arr").into()]).into());
 
         assert_eq!(set, RespSet(expected));
 

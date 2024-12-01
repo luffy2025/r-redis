@@ -35,6 +35,18 @@ impl Deref for SimpleString {
     }
 }
 
+impl From<String> for SimpleString {
+    fn from(s: String) -> Self {
+        SimpleString(s)
+    }
+}
+
+impl From<&str> for SimpleString {
+    fn from(s: &str) -> Self {
+        SimpleString(s.to_string())
+    }
+}
+
 impl Display for SimpleString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -63,7 +75,7 @@ mod tests {
     fn test_simple_string_decode() -> Result<()> {
         let mut buf = BytesMut::from(&b"+OK\r\n"[..]);
         let ret = SimpleString::decode(&mut buf)?;
-        assert_eq!(ret, SimpleString::new("OK".to_string()));
+        assert_eq!(ret, "OK".into());
 
         buf.extend_from_slice(b"+Hello\r".as_ref());
         let ret = SimpleString::decode(&mut buf);
@@ -71,7 +83,7 @@ mod tests {
 
         buf.put_u8(b'\n');
         let ret = SimpleString::decode(&mut buf)?;
-        assert_eq!(ret, SimpleString::new("Hello".to_string()));
+        assert_eq!(ret, "Hello".into());
 
         Ok(())
     }

@@ -46,20 +46,19 @@ impl AsRef<[u8]> for BulkString {
 }
 
 impl BulkString {
-    pub fn new(data: Vec<u8>) -> Self {
-        Self(data)
+    pub fn new(data: impl Into<Vec<u8>>) -> Self {
+        Self(data.into())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::RespFrame;
     use anyhow::Result;
 
     #[test]
     fn test_bulk_string_encode() {
-        let bs: RespFrame = BulkString::new(b"hello".to_vec()).into();
+        let bs: BulkString = BulkString::new(b"hello");
         assert_eq!(bs.encode(), b"$5\r\nhello\r\n");
     }
 
@@ -67,7 +66,7 @@ mod tests {
     fn test_bulk_string_decode() -> Result<()> {
         let mut buf = bytes::BytesMut::from(&b"$5\r\nhello\r\n"[..]);
         let bs = BulkString::decode(&mut buf)?;
-        assert_eq!(bs, BulkString::new(b"hello".to_vec()));
+        assert_eq!(bs, BulkString::new(b"hello"));
         Ok(())
     }
 }

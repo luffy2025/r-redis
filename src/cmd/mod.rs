@@ -1,14 +1,22 @@
+use crate::backend::Backend;
 use crate::cmd::get::Get;
 use crate::cmd::hget::HGet;
 use crate::cmd::hset::HSet;
 use crate::cmd::set::Set;
-use crate::{RespArray, RespFrame};
+use crate::{RespArray, RespFrame, RespNull};
+use lazy_static::lazy_static;
 use thiserror::Error;
 
 mod get;
 mod hget;
 mod hset;
 mod set;
+
+lazy_static! {
+    static ref RESP_OK: RespFrame = RespFrame::SimpleString("OK".into());
+    static ref RESP_EMPTY: RespFrame = RespNull.into();
+    static ref BACKEND: Backend = Backend::new();
+}
 
 pub enum Command {
     Get(Get),
@@ -31,7 +39,7 @@ pub enum CommandError {
 }
 
 pub trait Executor {
-    fn execute(&self) -> Result<RespFrame, CommandError>;
+    fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError>;
 }
 
 impl TryFrom<RespFrame> for Command {
@@ -114,9 +122,9 @@ mod tests {
         let cmd = RespArray::decode(&mut cmd)?;
         let args = extract_args(cmd, 1)?;
         assert_eq!(args.len(), 3);
-        assert_eq!(args[0], BulkString::new(b"map".to_vec()).into());
-        assert_eq!(args[1], BulkString::new(b"hello".to_vec()).into());
-        assert_eq!(args[2], BulkString::new(b"world".to_vec()).into());
+        assert_eq!(args[0], BulkString::new(b"map").into());
+        assert_eq!(args[1], BulkString::new(b"hello").into());
+        assert_eq!(args[2], BulkString::new(b"world").into());
         Ok(())
     }
 }

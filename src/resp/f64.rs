@@ -45,6 +45,12 @@ impl RespDecode for RespF64 {
     }
 }
 
+impl From<f64> for RespF64 {
+    fn from(f: f64) -> Self {
+        RespF64(f)
+    }
+}
+
 impl RespF64 {
     pub fn new(f: f64) -> Self {
         RespF64(f)
@@ -71,7 +77,7 @@ mod tests {
     fn test_f64_decode() -> Result<()> {
         let mut buf = bytes::BytesMut::from(&b",+0e0\r\n"[..]);
         let ret = RespF64::decode(&mut buf)?;
-        assert_eq!(ret, RespF64(0f64));
+        assert_eq!(ret, 0f64.into());
 
         let mut buf = bytes::BytesMut::from(&b",+10\r\n"[..]);
         let ret = RespF64::decode(&mut buf)?;

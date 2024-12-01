@@ -34,6 +34,18 @@ impl Deref for SimpleError {
     }
 }
 
+impl From<String> for SimpleError {
+    fn from(s: String) -> Self {
+        SimpleError(s)
+    }
+}
+
+impl From<&str> for SimpleError {
+    fn from(s: &str) -> Self {
+        SimpleError(s.to_string())
+    }
+}
+
 impl Display for SimpleError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
@@ -49,11 +61,10 @@ impl SimpleError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::RespFrame;
 
     #[test]
     fn test_simple_error() {
-        let s: RespFrame = SimpleError::new("Error message").into();
+        let s: SimpleError = "Error message".into();
         assert_eq!(s.encode(), b"-Error message\r\n");
     }
 
@@ -61,6 +72,6 @@ mod tests {
     fn test_simple_error_decode() {
         let mut buf = BytesMut::from(&b"-Error message\r\n"[..]);
         let s = SimpleError::decode(&mut buf).unwrap();
-        assert_eq!(s, SimpleError::new("Error message"));
+        assert_eq!(s, "Error message".into());
     }
 }

@@ -1,4 +1,5 @@
-use crate::cmd::{extract_args, validate_command, CommandError, Executor};
+use crate::backend::Backend;
+use crate::cmd::{extract_args, validate_command, CommandError, Executor, RESP_OK};
 use crate::{RespArray, RespFrame};
 
 #[allow(dead_code)]
@@ -8,8 +9,9 @@ pub struct Set {
 }
 
 impl Executor for Set {
-    fn execute(&self) -> Result<RespFrame, CommandError> {
-        todo!()
+    fn execute(self, backend: &Backend) -> Result<RespFrame, CommandError> {
+        backend.set(self.key, self.value);
+        Ok(RESP_OK.clone())
     }
 }
 
@@ -37,6 +39,9 @@ impl TryFrom<RespArray> for Set {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::backend::Backend;
+    use crate::cmd::Get;
+    use crate::cmd::RESP_EMPTY;
     use crate::{BulkString, RespDecode};
     use anyhow::Result;
 
@@ -47,7 +52,7 @@ mod tests {
         let cmd = RespArray::decode(&mut cmd)?;
         let set = Set::try_from(cmd)?;
         assert_eq!(set.key, "hello");
-        assert_eq!(set.value, BulkString::new(b"world".into()).into());
+        assert_eq!(set.value, BulkString::new(b"world").into());
         Ok(())
     }
 
@@ -57,6 +62,39 @@ mod tests {
         let cmd = RespArray::decode(&mut cmd)?;
         let set = Set::try_from(cmd);
         assert!(set.is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_execute_set_get() -> Result<()> {
+        let backend = Backend::new();
+
+        // set
+        let mut cmd =
+            bytes::BytesMut::from(&b"*3\r\n$3\r\nset\r\n$5\r\nhello\r\n$5\r\nworld\r\n"[..]);
+        let cmd = RespArray::decode(&mut cmd)?;
+        let set = Set::try_from(cmd)?;
+        assert_eq!(set.key, "hello");
+        assert_eq!(set.value, BulkString::new(b"world").into());
+
+        let ret = set.execute(&backend)?;
+        assert_eq!(ret, RESP_OK.clone());
+
+        // get
+        let mut cmd = bytes::BytesMut::from(&b"*2\r\n$3\r\nget\r\n$5\r\nhello\r\n"[..]);
+        let cmd = RespArray::decode(&mut cmd)?;
+        let get = Get::try_from(cmd)?;
+
+        let ret = get.execute(&backend)?;
+        assert_eq!(ret, BulkString::new(b"world").into());
+
+        // get not exist key
+        let mut cmd = bytes::BytesMut::from(&b"*2\r\n$3\r\nget\r\n$5\r\nnot_exist_key\r\n"[..]);
+        let cmd = RespArray::decode(&mut cmd)?;
+        let get = Get::try_from(cmd)?;
+        let ret = get.execute(&backend)?;
+        assert_eq!(ret, RESP_EMPTY.clone());
+
         Ok(())
     }
 }

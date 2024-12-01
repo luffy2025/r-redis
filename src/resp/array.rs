@@ -55,6 +55,18 @@ impl DerefMut for RespArray {
     }
 }
 
+impl From<Vec<RespFrame>> for RespArray {
+    fn from(frame: Vec<RespFrame>) -> Self {
+        RespArray::new(frame)
+    }
+}
+
+impl From<&[RespFrame]> for RespArray {
+    fn from(frame: &[RespFrame]) -> Self {
+        RespArray::new(frame.to_vec())
+    }
+}
+
 impl RespArray {
     pub fn new(arr: Vec<RespFrame>) -> Self {
         RespArray { data: arr }
@@ -78,33 +90,35 @@ mod tests {
 
     #[test]
     fn test_resp_array() {
-        let arr: RespFrame = RespArray::new(vec![
-            BulkString::new("get".into()).into(),
-            BulkString::new("hello".into()).into(),
-            SimpleString::new("rust".to_string()).into(),
-        ])
+        let arr: RespArray = vec![
+            BulkString::new("get").into(),
+            BulkString::new("hello").into(),
+            SimpleString::new("rust").into(),
+        ]
         .into();
         assert_eq!(arr.encode(), b"*3\r\n$3\r\nget\r\n$5\r\nhello\r\n+rust\r\n");
     }
 
     #[test]
     fn test_resp_array_decode() -> Result<()> {
-        let mut buf = bytes::BytesMut::from(&b"*3\r\n$3\r\nget\r\n$5\r\nhello\r\n+rust\r\n"[..]);
+        let mut buf = bytes::BytesMut::from(&b"*3\r\n$3\r\nget\r\n$5\r\nhello\r\n+world\r\n"[..]);
         let ret = RespArray::decode(&mut buf)?;
         assert_eq!(
             ret,
-            RespArray::new(vec![
-                BulkString::new("get".into()).into(),
-                BulkString::new("hello".into()).into(),
-                SimpleString::new("rust".to_string()).into(),
-            ])
+            vec![
+                BulkString::new("get").into(),
+                BulkString::new("hello").into(),
+                SimpleString::new("world").into()
+            ]
+            .into()
         );
+
         Ok(())
     }
 
     #[test]
     fn test_resp_array_decode_not_complete() -> Result<()> {
-        let mut buf = bytes::BytesMut::from(&b"*3\r\n$3\r\nget\r\n$5\r\nhello\r\n+rust\r"[..]);
+        let mut buf = bytes::BytesMut::from(&b"*3\r\n$3\r\nget\r\n$5\r\nhello\r\n+China\r"[..]);
         let ret = RespArray::decode(&mut buf);
         assert_eq!(ret.unwrap_err(), RespError::NotCompete);
 
@@ -112,11 +126,12 @@ mod tests {
         let ret = RespArray::decode(&mut buf)?;
         assert_eq!(
             ret,
-            RespArray::new(vec![
-                BulkString::new("get".into()).into(),
-                BulkString::new("hello".into()).into(),
-                SimpleString::new("rust".to_string()).into(),
-            ])
+            vec![
+                BulkString::new("get").into(),
+                BulkString::new("hello").into(),
+                SimpleString::new("China").into()
+            ]
+            .into()
         );
         Ok(())
     }
