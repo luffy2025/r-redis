@@ -18,13 +18,22 @@ impl TryFrom<RespArray> for Echo {
     fn try_from(value: RespArray) -> Result<Self, Self::Error> {
         validate_command(&value, &["echo"], 1)?;
 
-        let mut args = extract_args(value, 1)?.into_iter();
-        match args.next() {
-            Some(RespFrame::BulkString(key)) => Ok(Echo {
-                arg: String::from_utf8_lossy(key.as_slice()).to_string(),
-            }),
-            _ => Err(CommandError::InvalidArgs("Invalid arguments".to_string())),
-        }
+        let args = extract_args(value, 1)?.into_iter();
+        let mut input = String::new();
+        args.for_each(|arg| {
+            if let RespFrame::BulkString(arg) = arg {
+                input.push_str(&String::from_utf8_lossy(arg.as_slice()));
+                input.push(' ');
+            }
+        });
+        let input = input.trim().to_string();
+        Ok(Echo::new(input))
+    }
+}
+
+impl Echo {
+    pub fn new(arg: String) -> Self {
+        Echo { arg }
     }
 }
 
@@ -42,6 +51,14 @@ mod tests {
         let resp = echo.execute(&Backend::new())?;
 
         assert_eq!(resp, SimpleString::from("hello").into());
+
+        let mut cmd =
+            bytes::BytesMut::from(&b"*3\r\n$4\r\necho\r\n$5\r\nhello\r\n$4\r\nboys\r\n"[..]);
+        let cmd = RespArray::decode(&mut cmd)?;
+        let echo = Echo::try_from(cmd)?;
+        let resp = echo.execute(&Backend::new())?;
+
+        assert_eq!(resp, SimpleString::from("hello boys").into());
         Ok(())
     }
 }
