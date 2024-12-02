@@ -1,4 +1,4 @@
-use crate::RespFrame;
+use crate::{RespFrame, RespNull};
 use dashmap::DashMap;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -58,6 +58,18 @@ impl BackendInner {
         self.hmap
             .get(key)
             .and_then(|v| v.get(field).map(|v| v.value().clone()))
+    }
+
+    pub fn hmget(&self, key: &str, fields: &[String]) -> Option<Vec<RespFrame>> {
+        self.hmap.get(key).map(|v| {
+            fields
+                .iter()
+                .map(|field| {
+                    v.get(field)
+                        .map_or_else(|| RespNull.into(), |v| v.value().clone())
+                })
+                .collect()
+        })
     }
 
     pub fn hset(&self, key: String, field: String, value: RespFrame) {

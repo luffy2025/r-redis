@@ -3,6 +3,7 @@ use crate::cmd::echo::Echo;
 use crate::cmd::get::Get;
 use crate::cmd::hget::HGet;
 use crate::cmd::hgetall::HGetAll;
+use crate::cmd::hmget::HMGet;
 use crate::cmd::hset::HSet;
 use crate::cmd::set::Set;
 use crate::{RespArray, RespFrame, RespNull};
@@ -14,6 +15,7 @@ mod echo;
 mod get;
 mod hget;
 mod hgetall;
+mod hmget;
 mod hset;
 mod set;
 
@@ -33,6 +35,7 @@ pub enum Command {
     Get(Get),
     Set(Set),
     HGet(HGet),
+    HMGet(HMGet),
     HSet(HSet),
     HSetAll(HGetAll),
     Unrecognized(Unrecognized),
@@ -76,6 +79,7 @@ impl TryFrom<RespFrame> for Command {
                 b"get" => Ok(Command::Get(Get::try_from(frame)?)),
                 b"set" => Ok(Command::Set(Set::try_from(frame)?)),
                 b"hget" => Ok(Command::HGet(HGet::try_from(frame)?)),
+                b"hmget" => Ok(Command::HMGet(HMGet::try_from(frame)?)),
                 b"hset" => Ok(Command::HSet(HSet::try_from(frame)?)),
                 b"hgetall" => Ok(Command::HSetAll(HGetAll::try_from(frame)?)),
                 _ => Ok(Command::Unrecognized(Unrecognized)),
