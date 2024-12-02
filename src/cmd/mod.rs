@@ -1,4 +1,5 @@
 use crate::backend::Backend;
+use crate::cmd::echo::Echo;
 use crate::cmd::get::Get;
 use crate::cmd::hget::HGet;
 use crate::cmd::hgetall::HGetAll;
@@ -9,6 +10,7 @@ use enum_dispatch::enum_dispatch;
 use lazy_static::lazy_static;
 use thiserror::Error;
 
+mod echo;
 mod get;
 mod hget;
 mod hgetall;
@@ -27,6 +29,7 @@ pub struct Unrecognized;
 #[derive(Debug)]
 #[enum_dispatch(CommandExecutor)]
 pub enum Command {
+    Echo(Echo),
     Get(Get),
     Set(Set),
     HGet(HGet),
@@ -69,6 +72,7 @@ impl TryFrom<RespFrame> for Command {
 
         match frame.first() {
             Some(RespFrame::BulkString(cmd)) => match cmd.as_ref() {
+                b"echo" => Ok(Command::Echo(Echo::try_from(frame)?)),
                 b"get" => Ok(Command::Get(Get::try_from(frame)?)),
                 b"set" => Ok(Command::Set(Set::try_from(frame)?)),
                 b"hget" => Ok(Command::HGet(HGet::try_from(frame)?)),
