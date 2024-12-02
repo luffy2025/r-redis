@@ -1,6 +1,13 @@
 use crate::{extract_end_and_length, is_single_complete, RespDecode, RespEncode, RespError};
 use bytes::{Buf, BytesMut};
+use lazy_static::lazy_static;
 use std::ops::Deref;
+
+const NULL_BULK_STRING_ENCODE: &[u8] = b"$-1\r\n";
+
+lazy_static! {
+    static ref NULL_BULK_STRING: BulkString = BulkString::from(NULL_BULK_STRING_ENCODE);
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BulkString(Vec<u8>);
@@ -8,6 +15,10 @@ pub struct BulkString(Vec<u8>);
 // - bulk string: "$<length>\r\n<data>\r\n"
 impl RespEncode for BulkString {
     fn encode(&self) -> Vec<u8> {
+        if self.to_vec() == NULL_BULK_STRING_ENCODE {
+            return NULL_BULK_STRING_ENCODE.to_vec();
+        }
+
         let length = self.len();
         let mut buf = Vec::with_capacity(1 + 2 + 1 + 1 + 1 + length + 2);
         buf.push(*Self::PREFIX);
@@ -21,6 +32,10 @@ impl RespEncode for BulkString {
 impl RespDecode for BulkString {
     const PREFIX: &'static u8 = &b'$';
     fn decode(buf: &mut BytesMut) -> Result<Self, RespError> {
+        if buf.to_vec() == NULL_BULK_STRING_ENCODE {
+            return Ok(NULL_BULK_STRING.clone());
+        }
+
         let (end, len) = extract_end_and_length(buf, &[*Self::PREFIX])?;
         is_single_complete(buf, len)?;
 
@@ -91,6 +106,18 @@ mod tests {
         let mut buf = bytes::BytesMut::from(&b"$5\r\nhello\r\n"[..]);
         let bs = BulkString::decode(&mut buf)?;
         assert_eq!(bs, b"hello".into());
+        Ok(())
+    }
+
+    #[test]
+    fn test_bulk_string_null_encode() -> Result<()> {
+        let bs: BulkString = NULL_BULK_STRING.clone();
+        assert_eq!(bs.encode(), b"$-1\r\n");
+
+        let mut buf = BytesMut::from(NULL_BULK_STRING_ENCODE);
+        let frame = BulkString::decode(&mut buf)?;
+        assert_eq!(frame, bs);
+
         Ok(())
     }
 }
