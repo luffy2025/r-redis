@@ -48,7 +48,6 @@ mod tests {
     use crate::cmd::hset::HSet;
     use crate::RespDecode;
     use anyhow::Result;
-    use std::collections::BTreeMap;
 
     #[test]
     fn test_hgetall_command() -> Result<()> {
@@ -90,21 +89,28 @@ mod tests {
         assert_eq!(resp.len() % 2, 0);
 
         // 排序
-        let mut sorted_map = BTreeMap::new();
+        let mut sorted: Vec<(RespFrame, RespFrame)> = Vec::with_capacity(resp.len() / 2);
+
         resp.iter().enumerate().step_by(2).for_each(|(i, key)| {
-            let key = match key {
-                RespFrame::BulkString(key) => String::from_utf8_lossy(key.as_slice()),
-                _ => panic!("Expected BulkString"),
-            };
-            let value = &resp[i + 1];
-            sorted_map.insert(key.to_string(), value.clone());
+            sorted.push((key.to_owned(), resp[i + 1].to_owned()));
         });
 
-        let mut sorted_resp = Vec::with_capacity(resp.len());
-        sorted_map.iter().for_each(|(key, value)| {
-            sorted_resp.push(BulkString::from(key.to_string()).into());
-            sorted_resp.push(value.clone());
+        sorted.sort_by(|a, b| {
+            let a = match a.0 {
+                RespFrame::BulkString(ref a) => a,
+                _ => panic!("Expected BulkString"),
+            };
+            let b = match b.0 {
+                RespFrame::BulkString(ref b) => b,
+                _ => panic!("Expected BulkString"),
+            };
+            a.cmp(b)
         });
+
+        let sorted_resp = sorted
+            .into_iter()
+            .flat_map(|(k, v)| vec![k, v])
+            .collect::<Vec<RespFrame>>();
 
         assert_eq!(
             sorted_resp,
