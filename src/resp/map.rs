@@ -75,9 +75,9 @@ mod tests {
     #[test]
     fn test_resp_map() {
         let mut map = RespMap::new();
-        map.insert(SimpleString::new("get"), BulkString::new("hello").into());
-        map.insert(SimpleString::new("set"), BulkString::new("world").into());
-        map.insert(SimpleString::new("add"), 10.into());
+        map.insert("get".into(), BulkString::new("hello").into());
+        map.insert("set".into(), BulkString::new("world").into());
+        map.insert("add".into(), 10.into());
 
         assert_eq!(
             map.encode(),
@@ -92,9 +92,9 @@ mod tests {
         );
         let map = RespMap::decode(&mut buf)?;
         let mut expected = RespMap::new();
-        expected.insert(SimpleString::new("get"), BulkString::new("hello").into());
-        expected.insert(SimpleString::new("set"), BulkString::new("world").into());
-        expected.insert(SimpleString::new("add"), 10.into());
+        expected.insert("get".into(), BulkString::new("hello").into());
+        expected.insert("set".into(), BulkString::new("world").into());
+        expected.insert("add".into(), 10.into());
         assert_eq!(map, expected);
 
         Ok(())

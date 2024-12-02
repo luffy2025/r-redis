@@ -31,6 +31,18 @@ impl RespDecode for BulkString {
     }
 }
 
+impl From<&[u8]> for BulkString {
+    fn from(data: &[u8]) -> Self {
+        BulkString(data.to_vec())
+    }
+}
+
+impl<const N: usize> From<&[u8; N]> for BulkString {
+    fn from(data: &[u8; N]) -> Self {
+        BulkString(data.to_vec())
+    }
+}
+
 impl Deref for BulkString {
     type Target = Vec<u8>;
 
@@ -58,7 +70,7 @@ mod tests {
 
     #[test]
     fn test_bulk_string_encode() {
-        let bs: BulkString = BulkString::new(b"hello");
+        let bs: BulkString = b"hello".into();
         assert_eq!(bs.encode(), b"$5\r\nhello\r\n");
     }
 
@@ -66,7 +78,7 @@ mod tests {
     fn test_bulk_string_decode() -> Result<()> {
         let mut buf = bytes::BytesMut::from(&b"$5\r\nhello\r\n"[..]);
         let bs = BulkString::decode(&mut buf)?;
-        assert_eq!(bs, BulkString::new(b"hello"));
+        assert_eq!(bs, b"hello".into());
         Ok(())
     }
 }
