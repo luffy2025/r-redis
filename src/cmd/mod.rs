@@ -1,6 +1,7 @@
 use crate::backend::Backend;
 use crate::cmd::get::Get;
 use crate::cmd::hget::HGet;
+use crate::cmd::hgetall::HGetAll;
 use crate::cmd::hset::HSet;
 use crate::cmd::set::Set;
 use crate::{RespArray, RespFrame, RespNull};
@@ -10,6 +11,7 @@ use thiserror::Error;
 
 mod get;
 mod hget;
+mod hgetall;
 mod hset;
 mod set;
 
@@ -29,7 +31,7 @@ pub enum Command {
     Set(Set),
     HGet(HGet),
     HSet(HSet),
-    // HSetAll(hset_all::HSetAll),
+    HSetAll(HGetAll),
     Unrecognized(Unrecognized),
 }
 
@@ -71,7 +73,7 @@ impl TryFrom<RespFrame> for Command {
                 b"set" => Ok(Command::Set(Set::try_from(frame)?)),
                 b"hget" => Ok(Command::HGet(HGet::try_from(frame)?)),
                 b"hset" => Ok(Command::HSet(HSet::try_from(frame)?)),
-                // b"hset_all" => Ok(Command::HSetAll(hset_all::HSetAll::new(cmd))),
+                b"hgetall" => Ok(Command::HSetAll(HGetAll::try_from(frame)?)),
                 _ => Ok(Command::Unrecognized(Unrecognized)),
             },
             _ => Err(CommandError::InvalidArgs("Invalid arguments".to_string())),

@@ -31,6 +31,18 @@ impl RespDecode for BulkString {
     }
 }
 
+impl From<String> for BulkString {
+    fn from(s: String) -> Self {
+        BulkString::new(s.into_bytes())
+    }
+}
+
+impl From<&str> for BulkString {
+    fn from(s: &str) -> Self {
+        BulkString::new(s.as_bytes())
+    }
+}
+
 impl From<&[u8]> for BulkString {
     fn from(data: &[u8]) -> Self {
         BulkString(data.to_vec())

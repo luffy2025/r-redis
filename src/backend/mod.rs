@@ -64,6 +64,10 @@ impl BackendInner {
         let hmap = self.hmap.entry(key).or_default();
         hmap.insert(field, value);
     }
+
+    pub fn hget_all(&self, key: &str) -> Option<DashMap<String, RespFrame>> {
+        self.hmap.get(key).map(|v| v.clone())
+    }
 }
 
 #[cfg(test)]
