@@ -3,7 +3,7 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 ---
-## [unreleased]
+## [2-4-hmget-hgetall] - 2024-12-03
 
 ### Features
 
@@ -19,6 +19,10 @@ All notable changes to this project will be documented in this file. See [conven
 - support echo command with multi args - ([ecc6b46](https://github.com/luffy2025/r-redis/commit/ecc6b466964a08eb647d4147511135e67f565c22)) - Luffy2025
 - support hmget command - ([38e5e07](https://github.com/luffy2025/r-redis/commit/38e5e07310e9453800dab8effe41dd6dcc756495)) - Luffy2025
 - support NullBulkString and NullArray - ([6629130](https://github.com/luffy2025/r-redis/commit/6629130e3e7457d1ff16f8d6070ea92a375ec178)) - Luffy2025
+
+### Miscellaneous Chores
+
+- update CHANGELOG.md - ([ef273be](https://github.com/luffy2025/r-redis/commit/ef273be9746f9892bf6ba8c2fd220d0ca227fd60)) - Luffy2025
 
 ### Performance
 
